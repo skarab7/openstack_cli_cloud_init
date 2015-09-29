@@ -1,0 +1,22 @@
+#cloud-config
+packages:
+    - python-dev
+    - python-pip
+    - vim-tiny
+    - tmux
+    - libffi-dev #  for pyopenssl
+    - libssl-dev #  for pyopenssl
+write_files:
+-   owner: ubuntu:ubuntu
+    path: /home/ubuntu/requirements.txt
+    content: |
+        python-heatclient==0.6.0
+        python-keystoneclient==1.6.0
+        python-neutronclient==2.6.0
+        python-novaclient==2.26.0
+        python-swiftclient==2.4.0
+        pyopenssl
+        ndg-httpsclient
+        pyasn1
+runcmd:
+    - ['pip', 'install', '-r', '/home/ubuntu/requirements.txt']
