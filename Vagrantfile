@@ -62,19 +62,38 @@ Vagrant.configure(2) do |config|
       vb.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
     end
 
-    ds.vm.provision :shell, :inline => "
-rm -rf /var/lib/cloud/instance/*
-rm -rf /var/lib/cloud/seed/nocloud-net/user-data
+    ds.vm.provision :shell, :inline => """
+      rm -rf /var/lib/cloud/instance/*
+      rm -rf /var/lib/cloud/seed/nocloud-net/user-data
 
-
-# Seed our own init scripts
-cp -f /vagrant_data/os_cli_script.yml /var/lib/cloud/seed/nocloud-net/user-data 
+      # Seed our own init scripts
+      cp -f /vagrant_data/os_cli_script.yml /var/lib/cloud/seed/nocloud-net/user-data 
  
-# Re-run cloud-init
-sudo cloud-init init
-sudo cloud-init modules --mode config
-sudo cloud-init modules --mode final || true
+      # Re-run cloud-init
+      sudo cloud-init init
+      sudo cloud-init modules --mode config
+      sudo cloud-init modules --mode final || true
+    """ 
 
+    # show how to use BATS to verify cloud-init
+    test_is_nova_installed = %{
+@test "checking whether nova installed file prints an error" {
+  run nova
+  [ "\\$status" -eq 0 ]
+}
+    }
+
+    ds.vm.provision :shell, :inline => "
+      if [ ! -d /home/vagrant/bats ]; then apt-get install git -yy;
+        cd /home/vagrant/ &&  git clone https://github.com/sstephenson/bats.git;
+        cd bats;
+        ./install.sh /usr/local
+      fi;
+      mkdir -p /home/vagrant/os-cli-tests
+      cat > /home/vagrant/os-cli-tests/test-nova.sh <<EOL
+        #{test_is_nova_installed}
+EOL
+      bats /home/vagrant/os-cli-tests/test-nova.sh
     "
   end
 end
